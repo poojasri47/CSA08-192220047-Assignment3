@@ -1,0 +1,96 @@
+import random
+import time
+from collections import deque
+
+
+def moving_avg_naive(readings, window=7):
+    if window <= 0 or len(readings) < window:
+        return []
+    result = []
+    for i in range(len(readings) - window + 1):
+        total = 0.0
+        for j in range(i, i + window):
+            total += readings[j]
+        result.append(round(total / window, 2))
+    return result
+
+
+def moving_avg_running(readings, window=7):
+    if window <= 0 or len(readings) < window:
+        return []
+    win_sum = sum(readings[:window])
+    result = [round(win_sum / window, 2)]
+    for i in range(window, len(readings)):
+        win_sum += readings[i] - readings[i - window]
+        result.append(round(win_sum / window, 2))
+    return result
+
+
+def moving_avg_deque(readings, window=7):
+    if window <= 0 or len(readings) < window:
+        return []
+    dq = deque(readings[:window], maxlen=window)
+    win_sum = sum(dq)
+    result = [round(win_sum / window, 2)]
+    for val in readings[window:]:
+        oldest = dq[0]
+        dq.append(val)
+        win_sum += val - oldest
+        result.append(round(win_sum / window, 2))
+    return result
+
+
+def main():
+    random.seed(42)
+    readings = [
+        round(random.choice([0.0] * 6 + [random.uniform(0.5, 45.0) for _ in range(4)]), 2)
+        for _ in range(365)
+    ]
+
+    # Slicing demonstrations
+    print("readings[7:14] :", readings[7:14])
+    print("readings[-7:]  :", readings[-7:])
+    print("readings[::7]  :", readings[::7][:10], "... (total", len(readings[::7]), "samples)")
+
+    # Weekly totals (52 full weeks)
+    weekly_totals = [round(sum(readings[w * 7:(w + 1) * 7]), 2) for w in range(52)]
+    wettest_week = max(range(len(weekly_totals)), key=lambda idx: weekly_totals[idx])
+    driest_week = min(range(len(weekly_totals)), key=lambda idx: weekly_totals[idx])
+
+    max_val = max(readings)
+    max_day = readings.index(max_val)
+    min_val = min(readings)
+    min_day = readings.index(min_val)
+    dry_days = [i for i, val in enumerate(readings) if val == 0.0]
+    ma_7 = moving_avg_running(readings, 7)
+
+    print(f"Weekly totals (first 5 weeks): {weekly_totals[:5]}")
+    print(f"Wettest week: Week {wettest_week + 1} ({weekly_totals[wettest_week]} mm)")
+    print(f"Driest week : Week {driest_week + 1} ({weekly_totals[driest_week]} mm)")
+    print(f"Max rainfall: {max_val} mm on day {max_day}")
+    print(f"Min rainfall: {min_val} mm on day {min_day}")
+    print(f"Dry days count (0 mm): {len(dry_days)}")
+    print(f"7-day moving avg count: {len(ma_7)}, first 3: {ma_7[:3]}")
+
+    # Edge cases
+    print("Edge []       :", moving_avg_running([], 7))
+    print("Edge [1,2,3]  :", moving_avg_running([1, 2, 3], 7))
+
+    # Benchmarks across 365, 36,500, and 365,000 readings
+    for n in (365, 36500, 365000):
+        data = [random.uniform(0, 50) for _ in range(n)]
+        t0 = time.perf_counter()
+        moving_avg_naive(data, 7)
+        t1 = time.perf_counter()
+        moving_avg_running(data, 7)
+        t2 = time.perf_counter()
+        naive_adds = max(0, (n - 6) * 7)
+        run_adds = max(0, 6 + 2 * (n - 7)) if n >= 7 else 0
+        print(
+            f"n={n:6d} | naive={(t1-t0)*1000:7.3f} ms ({naive_adds} adds) "
+            f"| running={(t2-t1)*1000:7.3f} ms ({run_adds} adds)"
+        )
+
+
+if __name__ == "__main__":
+    main()
