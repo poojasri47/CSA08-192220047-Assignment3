@@ -1,0 +1,88 @@
+import copy
+import sys
+import time
+
+
+def complete_code_demo():
+    rows, cols = 3, 4
+    bad = [[0] * cols] * rows  # every row is the SAME list object
+    bad[0][1] = 7
+
+    # TODO 1: Create a rows x cols grid of zeros using a list comprehension
+    good = [[0 for _ in range(cols)] for _ in range(rows)]
+    good[0][1] = 7
+
+    print("bad:", bad)
+    print("good:", good)
+    print(bad[0] is bad[1], good[0] is good[1])
+
+    stops = {(13.0827, 80.2707): "Chennai Central", (13.0418, 80.2341): "T. Nagar"}
+    print(stops[(13.0418, 80.2341)])
+
+    try:
+        bad_dict = {[13.0418, 80.2341]: "Invalid List Key"}
+    except TypeError as exc:
+        print("List as dict key error:", exc)
+
+
+def mutability_and_copying_demo():
+    # Tuple unpacking in a for loop
+    route_stops = [
+        ((13.0827, 80.2707), "Chennai Central", 12),
+        ((13.0418, 80.2341), "T. Nagar", 25),
+        ((13.0067, 80.2206), "Guindy", 18),
+    ]
+    for (lat, lon), name, boarding in route_stops:
+        print(f"Stop: {name} ({lat:.4f}, {lon:.4f}) -> {boarding} boardings")
+
+    # Aliasing vs Shallow Copy vs Deep Copy
+    original = [[1, 2], [3, 4]]
+    alias = original
+    shallow = original[:]  # equivalent to copy.copy(original)
+    deep = copy.deepcopy(original)
+
+    original[0].append(99)
+    print("After mutating original[0]:")
+    print(
+        "  id(original), id(alias), id(shallow), id(deep):",
+        id(original), id(alias), id(shallow), id(deep),
+    )
+    print("  alias  :", alias)
+    print("  shallow:", shallow)
+    print("  deep   :", deep)
+
+    # Tuple containing a list: tuple reference is immutable, inner list mutates
+    holder = ("Zone-A", [10, 20])
+    holder[1].append(30)
+    print("Tuple holding a list after list.append(30):", holder)
+
+
+def benchmarks():
+    lst = list(range(1_000_000))
+    tup = tuple(range(1_000_000))
+    print(f"1,000,000 elements size -> list: {sys.getsizeof(lst)} bytes, tuple: {sys.getsizeof(tup)} bytes")
+
+    t0 = time.perf_counter()
+    _ = [i for i in range(1_000_000)]
+    t1 = time.perf_counter()
+    _ = tuple(i for i in range(1_000_000))
+    t2 = time.perf_counter()
+
+    acc_l = 0
+    for i in range(1_000_000):
+        acc_l += lst[i]
+    t3 = time.perf_counter()
+
+    acc_t = 0
+    for i in range(1_000_000):
+        acc_t += tup[i]
+    t4 = time.perf_counter()
+
+    print(f"Create 1M -> list: {(t1-t0)*1000:.2f} ms, tuple: {(t2-t1)*1000:.2f} ms")
+    print(f"Index  1M -> list: {(t3-t2)*1000:.2f} ms, tuple: {(t4-t3)*1000:.2f} ms")
+
+
+if __name__ == "__main__":
+    complete_code_demo()
+    mutability_and_copying_demo()
+    benchmarks()
